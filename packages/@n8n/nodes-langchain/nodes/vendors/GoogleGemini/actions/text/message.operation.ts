@@ -314,10 +314,11 @@ export async function execute(this: IExecuteFunctions, i: number): Promise<INode
 		tools,
 		contents,
 		generationConfig,
-		systemInstruction: options.systemMessage
-			? { parts: [{ text: options.systemMessage }] }
-			: undefined,
 	};
+
+	if (options.systemMessage) {
+		body.systemInstruction = { parts: [{ text: options.systemMessage }] };
+	}
 
 	let response = (await apiRequest.call(this, 'POST', `/v1beta/${model}:generateContent`, {
 		body,
