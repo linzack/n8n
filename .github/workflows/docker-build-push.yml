@@ -106,7 +106,7 @@ jobs:
         id: determine-tags
         run: |
           N8N_VERSION_TAG="${{ needs.determine-build-context.outputs.n8n_version }}"
-          GHCR_BASE="ghcr.io/${{ github.repository }}/n8n"
+          GHCR_BASE="ghcr.io/${{ github.repository }}"
           PLATFORM="${{ matrix.platform }}"
 
           PRIMARY_GHCR_MANIFEST_TAG_VALUE="${GHCR_BASE}:${N8N_VERSION_TAG}"
@@ -121,7 +121,7 @@ jobs:
 
           if [[ "$PLATFORM" == "amd64" ]]; then
             echo "primary_ghcr_manifest_tag=${PRIMARY_GHCR_MANIFEST_TAG_VALUE}" >> "$GITHUB_OUTPUT"
-          }
+          fi
 
       - name: Determine Docker tags (runners variants)
         id: determine-runners-tags
