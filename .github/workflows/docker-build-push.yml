@@ -87,6 +87,14 @@ jobs:
       - name: Build n8n application
         run: pnpm build:n8n
 
+      - name: Verify 'compiled' directory contents
+        run: |
+          echo "Checking 'compiled' directory at root:"
+          ls -la ./compiled
+          echo "Checking 'compiled/packages/frontend/editor-ui/dist' for built frontend assets:"
+          ls -la ./compiled/packages/frontend/editor-ui/dist || echo "Frontend dist directory not found."
+        shell: bash
+
       - name: Determine Docker tags
         id: determine-tags
         run: |
