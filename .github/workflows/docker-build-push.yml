@@ -1,5 +1,6 @@
 # This workflow is used to build and push the Docker image for n8nio/n8n and n8nio/runners
 # It has been modified to only push to the forked repository's GitHub Container Registry (GHCR).
+# All self-hosted runners have been replaced with GitHub-hosted 'ubuntu-latest' runners.
 
 name: 'Docker: Build and Push (Fork)'
 
@@ -43,11 +44,11 @@ jobs:
             "platform": ["amd64", "arm64"],
             "include": [{
               "platform": "amd64",
-              "runner": "blacksmith-4vcpu-ubuntu-2204",
+              "runner": "ubuntu-latest",
               "docker_platform": "linux/amd64"
             }, {
               "platform": "arm64",
-              "runner": "blacksmith-4vcpu-ubuntu-2204-arm",
+              "runner": "ubuntu-latest",
               "docker_platform": "linux/arm64"
             }]
           }'
