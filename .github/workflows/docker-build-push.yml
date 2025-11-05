@@ -56,27 +56,27 @@ jobs:
           echo "Build matrix: $(echo "$MATRIX" | jq .)"
 
   build-and-push-docker:
-    name: Build App, then Build and Push Docker Image (${{ matrix.platform }})
+    name: Build and Push Docker Image (${{ matrix.platform }})
     needs: determine-build-context
     runs-on: ${{ matrix.runner }}
-    timeout-minutes: 15
     strategy:
       matrix: ${{ fromJSON(needs.determine-build-context.outputs.build_matrix) }}
     outputs:
       primary_ghcr_manifest_tag: ${{ steps.determine-tags.outputs.primary_ghcr_manifest_tag }}
       runners_primary_ghcr_manifest_tag: ${{ steps.determine-runners-tags.outputs.primary_ghcr_manifest_tag }}
       runners_distroless_primary_ghcr_manifest_tag: ${{ steps.determine-runners-tags.outputs.primary_ghcr_manifest_tag_distroless }}
+
     steps:
-      - name: Checkout code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Checkout repository
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4.1.0
+        uses: pnpm/action-setup@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+      - name: Setup Node.js with pnpm caching
+        uses: actions/setup-node@v4
         with:
           node-version: '22.x'
           cache: 'pnpm'
@@ -91,9 +91,16 @@ jobs:
         run: |
           echo "Checking 'compiled' directory at root:"
           ls -la ./compiled
-          echo "Checking 'compiled/packages/frontend/editor-ui/dist' for built frontend assets:"
-          ls -la ./compiled/packages/frontend/editor-ui/dist || echo "Frontend dist directory not found."
+          echo "Checking 'packages/frontend/editor-ui/dist' for built frontend assets:"
+          ls -la ./packages/frontend/editor-ui/dist || echo "Frontend dist directory not found."
         shell: bash
+
+      - name: Copy frontend assets to compiled directory
+        run: |
+          mkdir -p ./compiled/dist/public
+          cp -r ./packages/frontend/editor-ui/dist/* ./compiled/dist/public/
+          echo "Frontend assets copied to compiled/dist/public"
+          ls -la ./compiled/dist/public
 
       - name: Determine Docker tags
         id: determine-tags
@@ -114,7 +121,7 @@ jobs:
 
           if [[ "$PLATFORM" == "amd64" ]]; then
             echo "primary_ghcr_manifest_tag=${PRIMARY_GHCR_MANIFEST_TAG_VALUE}" >> "$GITHUB_OUTPUT"
-          fi
+          }
 
       - name: Determine Docker tags (runners variants)
         id: determine-runners-tags
@@ -128,12 +135,16 @@ jobs:
             "${{ matrix.platform }}" \
             "$GITHUB_OUTPUT"
 
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@b5ca514318bd6ebac0fb2aedd5d36ec1b5c232a2 # v3.10.0
+        id: buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Login to GitHub Container Registry
         if: needs.determine-build-context.outputs.push_enabled == 'true'
-        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3.4.0
+        uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -151,8 +162,10 @@ jobs:
           platforms: ${{ matrix.docker_platform }}
           provenance: true
           sbom: true
-          push: ${{ needs.determine-build-context.outputs.push_enabled == 'true' }}
+          push: ${{ needs.determine-build-context.outputs.push_enabled }}
           tags: ${{ steps.determine-tags.outputs.tags }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Build and push task runners Docker image (Alpine)
         uses: docker/build-push-action@v5
@@ -166,8 +179,10 @@ jobs:
           platforms: ${{ matrix.docker_platform }}
           provenance: true
           sbom: true
-          push: ${{ needs.determine-build-context.outputs.push_enabled == 'true' }}
+          push: ${{ needs.determine-build-context.outputs.push_enabled }}
           tags: ${{ steps.determine-runners-tags.outputs.tags }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Build and push task runners Docker image (distroless)
         uses: docker/build-push-action@v5
@@ -181,8 +196,10 @@ jobs:
           platforms: ${{ matrix.docker_platform }}
           provenance: true
           sbom: true
-          push: ${{ needs.determine-build-context.outputs.push_enabled == 'true' }}
+          push: ${{ needs.determine-build-context.outputs.push_enabled }}
           tags: ${{ steps.determine-runners-tags.outputs.tags_distroless }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   create_multi_arch_manifest:
     name: Create Multi-Arch Manifest
