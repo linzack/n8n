@@ -46,5 +46,10 @@ export async function apiRequest(
 		Object.assign(options, option);
 	}
 
+	console.log('================================');
+	console.log('Gemini API Request Options:');
+	console.log(JSON.stringify(options, null, 2));
+	console.log('================================');
+
 	return await this.helpers.httpRequestWithAuthentication.call(this, 'googlePalmApi', options);
 }

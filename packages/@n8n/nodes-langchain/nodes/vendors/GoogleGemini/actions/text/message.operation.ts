@@ -80,6 +80,13 @@ const properties: INodeProperties[] = [
 		description: 'Whether to return a simplified version of the response instead of the raw data',
 	},
 	{
+		displayName: 'Debug',
+		name: 'debug',
+		type: 'boolean',
+		default: false,
+		description: 'Whether to output the raw request body for debugging purposes',
+	},
+	{
 		displayName: 'Output Content as JSON',
 		name: 'jsonOutput',
 		type: 'boolean',
@@ -241,6 +248,7 @@ export async function execute(this: IExecuteFunctions, i: number): Promise<INode
 		role: string;
 	}>;
 	const simplify = this.getNodeParameter('simplify', i, true) as boolean;
+	const debug = this.getNodeParameter('debug', i, false) as boolean;
 	const jsonOutput = this.getNodeParameter('jsonOutput', i, false) as boolean;
 	const options = this.getNodeParameter('options', i, {});
 	validateNodeParameters(
@@ -370,16 +378,29 @@ export async function execute(this: IExecuteFunctions, i: number): Promise<INode
 	}
 
 	if (simplify) {
-		return response.candidates.map((candidate) => ({
+		const returnData = response.candidates.map((candidate) => ({
 			json: candidate,
 			pairedItem: { item: i },
 		}));
+
+		if (debug) {
+			for (const item of returnData) {
+				item.json.debug = { requestBody: body };
+			}
+		}
+		return returnData;
 	}
 
-	return [
+	const returnData = [
 		{
 			json: { ...response },
 			pairedItem: { item: i },
 		},
 	];
+
+	if (debug) {
+		returnData[0].json.debug = { requestBody: body };
+	}
+
+	return returnData;
 }
