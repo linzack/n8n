@@ -30,7 +30,7 @@ set -euo pipefail
 RELEASE_TYPE="${1:?Missing RELEASE_TYPE argument}"
 N8N_VERSION_TAG="${2:?Missing N8N_VERSION_TAG argument}"
 GHCR_BASE="${3:?Missing GHCR_BASE argument}"
-DOCKER_BASE="${4:?Missing DOCKER_BASE argument}"
+DOCKER_BASE="${4:-}"
 PLATFORM="${5:?Missing PLATFORM argument}"
 GITHUB_OUTPUT="${6:?Missing GITHUB_OUTPUT argument}"
 
@@ -46,12 +46,16 @@ generate_tags() {
     "stable")
       PRIMARY_GHCR_MANIFEST_TAG_VALUE="${GHCR_BASE}:${N8N_VERSION_TAG}${VARIANT_SUFFIX}"
       GHCR_TAGS_FOR_PUSH="${PRIMARY_GHCR_MANIFEST_TAG_VALUE}-${PLATFORM}"
-      DOCKER_TAGS_FOR_PUSH="${DOCKER_BASE}:${N8N_VERSION_TAG}${VARIANT_SUFFIX}-${PLATFORM}"
+      if [[ -n "$DOCKER_BASE" ]]; then
+        DOCKER_TAGS_FOR_PUSH="${DOCKER_BASE}:${N8N_VERSION_TAG}${VARIANT_SUFFIX}-${PLATFORM}"
+      fi
       ;;
     "nightly")
       PRIMARY_GHCR_MANIFEST_TAG_VALUE="${GHCR_BASE}:nightly${VARIANT_SUFFIX}"
-      GHCR_TAGS_FOR_PUSH="${PRIMARY_GHCR_MANIFEST_TAG_VALUE}-${PLATFORM}"
-      DOCKER_TAGS_FOR_PUSH="${DOCKER_BASE}:nightly${VARIANT_SUFFIX}-${PLATFORM}"
+      GHCR_TAGS_FOR_PUSH="${PRIMARY_TAGS_FOR_PUSH}-${PLATFORM}"
+      if [[ -n "$DOCKER_BASE" ]]; then
+        DOCKER_TAGS_FOR_PUSH="${DOCKER_BASE}:nightly${VARIANT_SUFFIX}-${PLATFORM}"
+      fi
       ;;
     "branch")
       PRIMARY_GHCR_MANIFEST_TAG_VALUE="${GHCR_BASE}:${N8N_VERSION_TAG}${VARIANT_SUFFIX}"
@@ -66,7 +70,9 @@ generate_tags() {
       else
         PRIMARY_GHCR_MANIFEST_TAG_VALUE="${GHCR_BASE}:dev${VARIANT_SUFFIX}"
         GHCR_TAGS_FOR_PUSH="${PRIMARY_GHCR_MANIFEST_TAG_VALUE}-${PLATFORM}"
-        DOCKER_TAGS_FOR_PUSH="${DOCKER_BASE}:dev${VARIANT_SUFFIX}-${PLATFORM}"
+        if [[ -n "$DOCKER_BASE" ]]; then
+          DOCKER_TAGS_FOR_PUSH="${DOCKER_BASE}:dev${VARIANT_SUFFIX}-${PLATFORM}"
+        fi
       fi
       ;;
   esac
