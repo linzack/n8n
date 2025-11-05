@@ -72,10 +72,20 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup and Build
-        uses: n8n-io/n8n/.github/actions/setup-nodejs-blacksmith@f5fbbbe0a28a886451c886cac6b49192a39b0eea # v1.104.1
+      - name: Setup pnpm
+        uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4.1.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          build-command: pnpm build:n8n
+          node-version: '22.x'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build n8n application
+        run: pnpm build:n8n
 
       - name: Determine Docker tags
         id: determine-tags
@@ -122,7 +132,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push n8n Docker image
-        uses: useblacksmith/build-push-action@574eb0ee0b59c6a687ace24192f0727dfb65d6d7 # v1.2
+        uses: docker/build-push-action@v5
         with:
           context: .
           file: ./docker/images/n8n/Dockerfile
@@ -137,7 +147,7 @@ jobs:
           tags: ${{ steps.determine-tags.outputs.tags }}
 
       - name: Build and push task runners Docker image (Alpine)
-        uses: useblacksmith/build-push-action@574eb0ee0b59c6a687ace24192f0727dfb65d6d7 # v1.2
+        uses: docker/build-push-action@v5
         with:
           context: .
           file: ./docker/images/runners/Dockerfile
@@ -152,7 +162,7 @@ jobs:
           tags: ${{ steps.determine-runners-tags.outputs.tags }}
 
       - name: Build and push task runners Docker image (distroless)
-        uses: useblacksmith/build-push-action@574eb0ee0b59c6a687ace24192f0727dfb65d6d7 # v1.2
+        uses: docker/build-push-action@v5
         with:
           context: .
           file: ./docker/images/runners/Dockerfile.distroless
